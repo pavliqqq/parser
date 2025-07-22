@@ -1,0 +1,55 @@
+<?php
+
+namespace App\Scrappers;
+
+use DiDom\Document;
+use Exception;
+
+class QuestionPageScrapper extends AbstractScrapper
+{
+    public function run(string $url): array
+    {
+        try {
+            $document = $this->documentService->createDocument($url);
+
+            $letter = $this->getLetter($document);
+
+            $rows = $document->find("#Searchresults table tbody tr");
+
+            $result = [];
+
+            foreach ($rows as $row) {
+                $questionTd = $row->first('td.Question a');
+                $answerTd = $row->first('td.AnswerShort a');
+
+                $question = $questionTd->text();
+                $answer = $answerTd->text();
+
+
+                $result[] = [
+                    'letter' => $letter,
+                    'question' => $question,
+                    'answer' => $answer,
+                ];
+            }
+            $this->dataService->insertData($result);
+            $count = count($result);
+            $this->logger->info("Parsed $count rows of letter $letter");
+
+            return $result;
+        } catch (Exception $e) {
+            $this->logger->error("Error with parsing: ", [
+                'message' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
+            ]);
+            return [];
+        }
+    }
+
+    private function getLetter(Document $document): string
+    {
+        $headerString = $document->find("div.Text h2")[0]->text();
+        $parts = explode(' ', trim($headerString));
+        return end($parts);
+    }
+}
