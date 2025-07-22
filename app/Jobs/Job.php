@@ -3,61 +3,45 @@
 namespace App\Jobs;
 
 use App\Services\DataService;
-use App\Services\QueryLinkService;
+use App\Services\DocumentService;
+use App\Services\LinkService;
 use Exception;
-use GuzzleHttp\Client;
 use Monolog\Logger;
 
 class Job
 {
     protected Logger $logger;
-    protected Client $client;
 
-    protected QueryLinkService $linkService;
+    protected LinkService $linkService;
     protected DataService $dataService;
+    protected DocumentService $documentService;
 
-    public function __construct(Logger $logger, Client $client, QueryLinkService $linkService, DataService $dataService)
+    public function __construct(Logger $logger, LinkService $linkService, DataService $dataService, DocumentService $documentService)
     {
         $this->logger = $logger;
-        $this->client = $client;
         $this->linkService = $linkService;
         $this->dataService = $dataService;
+        $this->documentService = $documentService;
     }
 
     public function handle()
     {
+        pcntl_signal_dispatch();
         while (true) {
-            $row = $this->linkService->getLink('url', 'pending');
-
-            if ($row === false) {
+            $link = $this->linkService->getLink();
+            if (!$link) {
                 sleep(1);
                 continue;
             }
 
-            $url = $row['url'];
-
-            $this->linkService->changeStatus('processing', $url);
-
             try {
-                $data = checkUrl($url, $this->client, $this->logger);
-
-                if ($data['type'] === 'links') {
-                    foreach ($data['data'] as $link) {
-                        $this->linkService->addLink($link);
-                    }
-                } elseif ($data['type'] === 'data') {
-                    $this->dataService->insertData($data['data']);
-                } else {
-                    $this->logger->error("Cant check url: $url");
-                }
-
-                $this->linkService->changeStatus('done', $url);
+                $model = new $link['class']($this->documentService, $this->linkService, $this->dataService, $this->logger);
+                $model->run($link['url']);
             } catch (Exception $e) {
-                $this->logger->error("Error with processing url: $url", [
+                $this->logger->error('Error with processing url:' . $link['url'], [
                     'message' => $e->getMessage(),
                     'trace' => $e->getTraceAsString()
                 ]);
-                $this->linkService->changeStatus('failed', $url);
             }
         }
     }
