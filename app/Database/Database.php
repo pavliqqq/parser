@@ -7,20 +7,20 @@ use PDOException;
 
 class Database
 {
-    private function connect(): PDO
+    private PDO $conn;
+    public function __construct()
     {
         $config = require __DIR__ . '/../../config/db.php';
-        $dbConfig = $config['db'];
 
-        $host = $dbConfig['host'];
-        $dbName = $dbConfig['dbname'];
-        $user = $dbConfig['user'];
-        $password = $dbConfig['password'];
+        $host = $config['host'];
+        $dbName = $config['dbname'];
+        $user = $config['user'];
+        $password = $config['password'];
 
         try {
-            $conn = new PDO("mysql:host=$host;dbname=$dbName;charset=utf8", $user, $password);
-            $conn->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
-            return $conn;
+            $this->conn = new PDO("mysql:host=$host;dbname=$dbName;charset=utf8", $user, $password);
+            $this->conn->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
+            return $this->conn;
         } catch (PDOException $e) {
             die("Connection failed: " . $e->getMessage());
         }
@@ -28,9 +28,21 @@ class Database
 
     public function query(string $sql, array $params = [])
     {
-        $conn = $this->connect();
-        $stmt = $conn->prepare($sql);
-        $stmt->execute($params);
-        return $stmt;
+        try {
+            $stmt = $this->conn->prepare($sql);
+            $stmt->execute($params);
+            return $stmt;
+        } catch (PDOException $e) {
+            if (str_contains($e->getMessage(), 'MySQL server has gone away')) {
+                $this->reconnect();
+                return $this->query($sql, $params);
+            }
+            throw $e;
+        }
+    }
+
+    private function reconnect(): void
+    {
+        $this->__construct();
     }
 }
