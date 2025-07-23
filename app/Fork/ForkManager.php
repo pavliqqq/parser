@@ -27,11 +27,12 @@ class ForkManager
 
         $config = require __DIR__ . '/../../config/parser.php';
         $this->threads = $config['threads'];
+
         $this->baseUrl = $config['base_url'];
         $this->startUrl = $config['start_url'];
     }
 
-    public function run()
+    public function run(): void
     {
         pcntl_async_signals(true);
         pcntl_signal(SIGINT, [$this, 'stop']);
@@ -67,7 +68,7 @@ class ForkManager
         }
     }
 
-    private function runStartPage()
+    private function runStartPage(): void
     {
         $client = new Client();
         $redis = new Redis();
@@ -81,7 +82,7 @@ class ForkManager
         $startScrapper->run($this->startUrl);
     }
 
-    private function runChild(int $index)
+    private function runChild(int $index): void
     {
         pcntl_signal(SIGINT, function () {
             posix_kill($this->parentPid, SIGINT);
@@ -101,7 +102,7 @@ class ForkManager
         $job->handle();
     }
 
-    public function stop()
+    public function stop(): void
     {
         if (getmypid() !== $this->parentPid) {
             return;
