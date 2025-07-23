@@ -13,12 +13,20 @@ abstract class AbstractScrapper implements ScrapperInterface
     protected LinkService $linkService;
     protected DataService $dataService;
     protected Logger $logger;
+    protected string $links;
+    protected string $processedLinks;
+    protected string $errorLinks;
     public function __construct(
         DocumentService $documentService,
         LinkService $linkService,
         DataService $dataService,
         Logger $logger
     ) {
+        $config = require __DIR__ . '/../../config/redis.php';
+        $this->links = $config['queue']['links'];
+        $this->processedLinks = $config['queue']['processed'];
+        $this->errorLinks = $config['queue']['error'];
+
         $this->documentService = $documentService;
         $this->linkService = $linkService;
         $this->dataService = $dataService;
