@@ -6,24 +6,20 @@ use Exception;
 
 class StartPageScrapper extends AbstractScrapper
 {
-    public function run(string $url): array
+    public function run(string $url): void
     {
         try {
-            $urls = [[
+            $link = [
                 'url' => $url,
                 'class' => LettersPageScrapper::class
-            ]];
+            ];
 
-            $this->linkService->addLink('urlsQueue', $urls);
+            $this->linkService->addLink($this->links, $link);
             $this->logger->info("Start page queued");
-
-            return $urls;
         } catch (Exception $e) {
             $this->logger->error("Error with parsing: $url", [
-                'message' => $e->getMessage(),
-                'trace' => $e->getTraceAsString()
+                'message' => $e->getMessage()
             ]);
-            return [];
         }
     }
 }
