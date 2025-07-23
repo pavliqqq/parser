@@ -12,10 +12,10 @@ class Database
     {
         $config = require __DIR__ . '/../../config/db.php';
 
-        $host = $config['host'];
-        $dbName = $config['dbname'];
-        $user = $config['user'];
-        $password = $config['password'];
+        $host = $config['connection']['host'];
+        $dbName = $config['connection']['dbname'];
+        $user = $config['connection']['user'];
+        $password = $config['connection']['password'];
 
         try {
             $this->conn = new PDO("mysql:host=$host;dbname=$dbName;charset=utf8", $user, $password);
