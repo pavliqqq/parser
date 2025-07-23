@@ -15,29 +15,45 @@ class Redis
 
         try {
             $this->client = new Client([
-                'scheme' => $config['scheme'],
-                'host' => $config['host'],
-                'port' => $config['port'],
-                'password' => $config['password'],
-                'database' => $config['database'],
+                'scheme' => $config['connection']['scheme'],
+                'host' => $config['connection']['host'],
+                'port' => $config['connection']['port'],
+                'password' => $config['connection']['password'],
+                'database' => $config['connection']['database'],
             ]);
         } catch (Exception $e) {
             die("Redis connection failed: " . $e->getMessage());
         }
     }
 
-    public function getClient()
+    public function rPush(string $queue, array $data): void
     {
-        return $this->client;
+        $this->client->rpush($queue, [json_encode($data)]);
     }
 
-    public function set(string $queue, array $data)
+    public function lPush(string $queue, array $data): void
     {
-        $this->client->rpush($queue, $data);
+        $this->client->lpush($queue, [json_encode($data)]);
     }
 
-    public function get(string $queue)
+    public function pop(string $queue): ?array
     {
-        return $this->client->lpop($queue);
+        $raw = $this->client->lpop($queue);
+        return $raw ? json_decode($raw, true) : null;
+    }
+
+    public function removeElement(string $queue, array $data): bool
+    {
+        return $this->client->lrem($queue, 0, json_encode($data)) > 0;
+    }
+
+    public function sAdd(string $key, array $data): void
+    {
+        $this->client->sadd($key, $data);
+    }
+
+    public function sIsMember(string $key, string $data): bool
+    {
+        return $this->client->sismember($key, $data);
     }
 }
