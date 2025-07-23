@@ -23,7 +23,7 @@ class DocumentService
         $this->loadProxiesFromFile($config['proxy_file']);
     }
 
-    public function loadProxiesFromFile(string $filename): void
+    private function loadProxiesFromFile(string $filename): void
     {
         if (!file_exists($filename)) {
             $this->logger->warning("Proxy file not found: $filename");
@@ -33,7 +33,7 @@ class DocumentService
         $this->proxies = array_map('trim', $lines);
     }
 
-    public function getRandomProxy(): ?array
+    private function getRandomProxy(): ?array
     {
         if (empty($this->proxies)) {
             return null;
@@ -57,7 +57,7 @@ class DocumentService
         ];
     }
 
-    private function getHtml(string $url): string
+    private function getHtml(string $url): ?string
     {
         $maxAttempts = 5;
         for ($attempt = 1; $attempt <= $maxAttempts; $attempt++) {
@@ -71,12 +71,21 @@ class DocumentService
             $proxyString = "http://{$proxy['user']}:{$proxy['pass']}@{$proxy['ip']}:{$proxy['port']}";
 
             try {
-                $response = $this->client->get($url, ['verify' => false, 'proxy' => $proxyString]);
+                $response = $this->client->get($url, [
+                    'verify' => false,
+                    'proxy' => $proxyString,
+                    'timeout' => 10,
+                    'connect_timeout' => 5
+                ]);
 
                 $status = $response->getStatusCode();
 
-                $this->logger->info("Load $url, status: " . $status);
-                return $response->getBody()->getContents();
+                if ($status === 200) {
+                    $this->logger->info("Load $url, status: " . $status);
+                    return $response->getBody()->getContents();
+                } else {
+                    return '';
+                }
             } catch (Exception $e) {
                 $this->logger->error("Attempt $attempt failed for $url", [
                     'proxy' => $proxyString,
@@ -84,12 +93,16 @@ class DocumentService
                 ]);
             }
         }
-        throw new \RuntimeException("Failed to load $url after $maxAttempts attempts.");
+        return '';
     }
 
-    public function createDocument(string $url): Document
+    public function createDocument(string $url): ?Document
     {
         $html = $this->getHtml($url);
+
+        if (!$html) {
+            return null;
+        }
 
         $document = new Document();
         $document->loadHtml($html);
