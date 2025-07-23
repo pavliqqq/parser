@@ -7,10 +7,14 @@ use Exception;
 
 class QuestionPageScrapper extends AbstractScrapper
 {
-    public function run(string $url): array
+    public function run(string $url): void
     {
         try {
             $document = $this->documentService->createDocument($url);
+            if ($document === null) {
+                $this->moveToErrorQueue($url);
+                return;
+            }
 
             $letter = $this->getLetter($document);
 
@@ -33,16 +37,13 @@ class QuestionPageScrapper extends AbstractScrapper
                 ];
             }
             $this->dataService->insertData($result);
+
             $count = count($result);
             $this->logger->info("Parsed $count rows of letter $letter");
-
-            return $result;
         } catch (Exception $e) {
-            $this->logger->error("Error with parsing: ", [
-                'message' => $e->getMessage(),
-                'trace' => $e->getTraceAsString()
+            $this->logger->error("Error with parsing: $url", [
+                'message' => $e->getMessage()
             ]);
-            return [];
         }
     }
 
