@@ -10,10 +10,14 @@ class DataService
 {
     protected Database $dataBase;
     protected Logger $logger;
-    protected string $dataTableName = 'crossword';
+    protected string $dataTableName;
 
     public function __construct(Database $dataBase, Logger $logger)
     {
+        $config = require __DIR__ . '/../../config/db.php';
+
+        $this->dataTableName = $config['data_table']['name'];
+
         $this->dataBase = $dataBase;
         $this->logger = $logger;
     }
@@ -43,9 +47,9 @@ class DataService
             );
 
             $stmt = $this->dataBase->query($sql, $values);
-            $affectedRowsNumber = $stmt->rowCount();
+            $rowsCount = $stmt->rowCount();
 
-            $this->logger->info("Insert rows: $affectedRowsNumber");
+            $this->logger->info("Insert rows: $rowsCount");
         } catch (PDOException $e) {
             $this->logger->error("Insert data error", [
                 'message' => $e->getMessage(),
