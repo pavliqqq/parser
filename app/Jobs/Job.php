@@ -15,8 +15,9 @@ class Job
     protected LinkService $linkService;
     protected DataService $dataService;
     protected DocumentService $documentService;
-
     protected ?array $currentLink = null;
+
+    protected string $links;
 
     public function __construct(
         Logger $logger,
@@ -24,6 +25,9 @@ class Job
         DataService $dataService,
         DocumentService $documentService
     ) {
+        $config = require __DIR__ . '/../../config/redis.php';
+        $this->links = $config['queue']['links'];
+
         $this->logger = $logger;
         $this->linkService = $linkService;
         $this->dataService = $dataService;
@@ -37,11 +41,11 @@ class Job
             exit(0);
         });
 
-        $limitSeconds = 5;
+        $limitSeconds = 7;
         $countSeconds = 0;
 
         while (true) {
-            $link = $this->linkService->getLink();
+            $link = $this->linkService->getLink($this->links);
             if (!$link) {
                 sleep(1);
                 $countSeconds++;

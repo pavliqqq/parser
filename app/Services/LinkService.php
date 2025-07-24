@@ -52,16 +52,16 @@ class LinkService
         }
     }
 
-    public function getLink() :?array
+    public function getLink(string $queue) :?array
     {
         try {
-            $rowLink = $this->redis->pop($this->links);
+            $rowLink = $this->redis->pop($queue);
             if ($rowLink) {
                 $this->redis->rPush($this->processedLinks, $rowLink);
                 $this->logger->info('Get link: ' . $rowLink['url']);
                 return $rowLink;
             } else {
-                $this->logger->warning("The queue '{$this->links}' is empty");
+                $this->logger->warning("The queue '{$queue}' is empty");
                 return null;
             }
         } catch (Exception $e) {
