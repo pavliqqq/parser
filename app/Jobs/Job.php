@@ -18,15 +18,17 @@ class Job
     protected ?array $currentLink = null;
 
     protected string $links;
+    protected string $errorLinks;
 
     public function __construct(
-        Logger $logger,
-        LinkService $linkService,
-        DataService $dataService,
+        Logger          $logger,
+        LinkService     $linkService,
+        DataService     $dataService,
         DocumentService $documentService
     ) {
         $config = require __DIR__ . '/../../config/redis.php';
         $this->links = $config['queue']['links'];
+        $this->errorLinks = $config['queue']['error'];
 
         $this->logger = $logger;
         $this->linkService = $linkService;
@@ -34,7 +36,7 @@ class Job
         $this->documentService = $documentService;
     }
 
-    public function handle():void
+    public function handle(): void
     {
         pcntl_signal(SIGTERM, function () {
             $this->onShutdown();
@@ -47,19 +49,25 @@ class Job
         while (true) {
             $link = $this->linkService->getLink($this->links);
             if (!$link) {
-                sleep(1);
-                $countSeconds++;
+                $errorLink = $this->linkService->getLink($this->errorLinks);
+                if ($errorLink) {
+                    $this->logger->info("Processing error link: {$errorLink['url']}");
+                    $link = $errorLink;
+                } else {
+                    sleep(1);
+                    $countSeconds++;
 
-                if ($countSeconds >= $limitSeconds) {
-                    $this->logger->info("Reached limit {$limitSeconds}s. Parser stopping...");
+                    if ($countSeconds >= $limitSeconds) {
+                        $this->logger->info("Reached limit {$limitSeconds}s. Parser stopping...");
 
-                    $parentPid = posix_getppid();
-                    posix_kill($parentPid, SIGINT);
+                        $parentPid = posix_getppid();
+                        posix_kill($parentPid, SIGINT);
 
-                    exit(0);
+                        exit(0);
+                    }
+
+                    continue;
                 }
-
-                continue;
             }
             $countSeconds = 0;
 
@@ -83,7 +91,7 @@ class Job
         }
     }
 
-    private function onShutdown():void
+    private function onShutdown(): void
     {
         if ($this->currentLink) {
             $this->linkService->returnLink($this->currentLink);
