@@ -78,8 +78,6 @@ class LinkService
             $removed = $this->redis->removeElement($this->processedLinks, $link);
 
             if ($removed) {
-                $this->logger->warning("Removed from '{$this->processedLinks}': {$link['url']}");
-
                 $this->redis->lPush($this->links, $link);
 
                 $this->logger->info("Returned link back to '{$this->links}': {$link['url']}");
