@@ -12,8 +12,8 @@
 ### 1. Clone the Repository
 
 ```bash
-git clone https://github.com/pavliqqq/conference.git
-cd conference
+git clone https://github.com/pavliqqq/parser.git
+cd parser
 ```
 
 ### 2. Install Dependencies
@@ -27,9 +27,15 @@ composer install
 ```bash
 cp .env.example .env
 ```
-Edit the .env file
+Edit the .env file.
+You can set LOG_CHANNEL=debug to log to the console, or file to log to a file.
+You can also configure the number of THREADS.
 
-### 4. Database Setup
+### 4. Proxy
+Add proxy file to the root of the project. 
+Make sure the filename matches the value set in the .env file
+
+### 5. Database Setup
 
 1) Connect to MySQL server:
 
@@ -52,7 +58,7 @@ exit
 4) Run the import command (for PowerShell):
 
 ```bash
-Get-Content .\database\dump.sql | mysql -u root -p conference
+Get-Content dump.sql | mysql -u root -p parser
 ```
 
 If the above command didn’t work, follow these steps:
@@ -68,5 +74,10 @@ cd path\to\your\project
 7) Run the import command:
 
 ```bash
-mysql -u root -p conference < database/dump.sql
+mysql -u root -p parser < dump.sql
+```
+
+### 6. Run app
+```bash
+php index.php
 ```
