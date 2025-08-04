@@ -43,18 +43,18 @@ class Job
             exit(0);
         });
 
-        $limitSeconds = 7;
+        $limitSeconds = 10;
         $countSeconds = 0;
 
         while (true) {
             $link = $this->linkService->getLink($this->links);
+            $this->currentLink = $link;
             if (!$link) {
-                $errorLink = $this->linkService->getLink($this->errorLinks);
-                if ($errorLink) {
-                    $this->logger->info("Processing error link: {$errorLink['url']}");
-                    $link = $errorLink;
-                } else {
+                $link = $this->linkService->getLink($this->errorLinks);
+                $this->currentLink = $link;
+                if (!$link) {
                     sleep(1);
+                    $this->logger->info("Waiting links...");
                     $countSeconds++;
 
                     if ($countSeconds >= $limitSeconds) {
@@ -71,7 +71,6 @@ class Job
             }
             $countSeconds = 0;
 
-            $this->currentLink = $link;
             try {
                 $model = new $link['class'](
                     $this->documentService,
@@ -80,13 +79,12 @@ class Job
                     $this->logger
                 );
                 $model->run($link['url']);
+                $this->currentLink = null;
             } catch (Exception $e) {
                 $this->logger->error('Error with processing url:' . $link['url'], [
                     'message' => $e->getMessage(),
                     'trace' => $e->getTraceAsString()
                 ]);
-            } finally {
-                $this->currentLink = null;
             }
         }
     }
@@ -96,7 +94,7 @@ class Job
         if ($this->currentLink) {
             $this->linkService->returnLink($this->currentLink);
         } else {
-            $this->logger->info("Nothing to return");
+            $this->logger->info("Child has nothing to return");
         }
     }
 }
