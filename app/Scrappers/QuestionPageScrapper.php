@@ -16,8 +16,6 @@ class QuestionPageScrapper extends AbstractScrapper
                 return;
             }
 
-            $letter = $this->getLetter($document);
-
             $rows = $document->find("#Searchresults table tbody tr");
 
             $result = [];
@@ -36,20 +34,10 @@ class QuestionPageScrapper extends AbstractScrapper
                 ];
             }
             $this->dataService->insertQuestionsAndAnswers($result);
-
-            $count = count($result);
-            $this->logger->info("Parsed $count rows of letter $letter");
         } catch (Exception $e) {
             $this->logger->error("Error with parsing: $url", [
                 'message' => $e->getMessage()
             ]);
         }
-    }
-
-    private function getLetter(Document $document): string
-    {
-        $headerString = $document->find("div.Text h2")[0]->text();
-        $parts = explode(' ', trim($headerString));
-        return end($parts);
     }
 }
