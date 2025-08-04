@@ -7,6 +7,8 @@ return [
         'password' => $_ENV['DB_PASSWORD'],
     ],
     'data_table' => [
-        'name' => 'crossword',
+        'questions' => 'questions',
+        'answers' => 'answers',
+        'question_answer' => 'question_answer'
     ]
 ];
