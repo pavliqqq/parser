@@ -14,8 +14,8 @@ class StartPageScrapper extends AbstractScrapper
                 'class' => LettersPageScrapper::class
             ];
 
+            $this->logger->info("Queueing start page...");
             $this->linkService->addLink($this->links, $link);
-            $this->logger->info("Start page queued");
         } catch (Exception $e) {
             $this->logger->error("Error with parsing: $url", [
                 'message' => $e->getMessage()
