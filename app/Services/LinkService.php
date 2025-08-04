@@ -61,7 +61,6 @@ class LinkService
                 $this->logger->info('Get link: ' . $rowLink['url']);
                 return $rowLink;
             } else {
-                $this->logger->warning("The queue '{$queue}' is empty");
                 return null;
             }
         } catch (Exception $e) {
