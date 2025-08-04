@@ -8,6 +8,7 @@ use PDOException;
 class Database
 {
     private PDO $conn;
+
     public function __construct()
     {
         $config = require __DIR__ . '/../../config/db.php';
@@ -44,5 +45,25 @@ class Database
     private function reconnect(): void
     {
         $this->__construct();
+    }
+
+    public function lastInsertId(): string
+    {
+        return $this->conn->lastInsertId();
+    }
+
+    public function beginTransaction(): bool
+    {
+        return $this->conn->beginTransaction();
+    }
+
+    public function commit(): bool
+    {
+        return $this->conn->commit();
+    }
+
+    public function rollback(): bool
+    {
+        return $this->conn->rollBack();
     }
 }
