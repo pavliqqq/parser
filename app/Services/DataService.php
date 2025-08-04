@@ -31,25 +31,31 @@ class DataService
         $this->dataBase->beginTransaction();
         try {
             $columns = array_keys($rows[0]);
-
             $questionColumn = $columns[0];
             $answerColumn = $columns[1];
+
+            $insertedCount = 0;
 
             foreach ($rows as $row) {
                 $questionData = $row[$questionColumn];
                 $answerData = $row[$answerColumn];
 
-                $questionId = $this->getId($this->questionsTableName, $columns[0], $questionData);
-                $answerId = $this->getId($this->answersTableName, $columns[1], $answerData);
+                $questionId = $this->getId($this->questionsTableName, $questionColumn, $questionData);
+                $answerId = $this->getId($this->answersTableName, $answerColumn, $answerData);
 
                 $data = [
                     'question_id' => $questionId,
                     'answer_id' => $answerId,
                 ];
 
-                $this->linkQuestionToAnswer($data);
+                $this->logger->info("Parsing question: $questionData, answer: $answerData");
+                $insertedCount += $this->linkQuestionToAnswer($data);
             }
             $this->dataBase->commit();
+
+            $this->logger->info(
+                "Insert data: expected rows = " . count($rows) . ", inserted rows = " . $insertedCount
+            );
         } catch (PDOException $e) {
             $this->dataBase->rollback();
             $this->logger->error("Insert data error", [
@@ -89,7 +95,7 @@ class DataService
         return $this->dataBase->lastInsertId();
     }
 
-    private function linkQuestionToAnswer(array $data): void
+    private function linkQuestionToAnswer(array $data): int
     {
         $columns = array_keys($data);
         $placeholders = array_map(fn($col) => "?", $columns);
@@ -101,6 +107,8 @@ class DataService
             implode(', ', $placeholders)
         );
 
-        $this->dataBase->query($sql, array_values($data));
+        $stmt = $this->dataBase->query($sql, array_values($data));
+
+        return $stmt->rowCount();
     }
 }
