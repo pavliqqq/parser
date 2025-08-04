@@ -31,12 +31,11 @@ class QuestionPageScrapper extends AbstractScrapper
 
 
                 $result[] = [
-                    'letter' => $letter,
                     'question' => $question,
                     'answer' => $answer,
                 ];
             }
-            $this->dataService->insertData($result);
+            $this->dataService->insertQuestionsAndAnswers($result);
 
             $count = count($result);
             $this->logger->info("Parsed $count rows of letter $letter");
