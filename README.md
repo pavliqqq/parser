@@ -46,7 +46,7 @@ mysql -u root -p
 2) Create the database:
 
 ```bash
-CREATE DATABASE parser CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+CREATE DATABASE parser CHARACTER SET utf8mb4 COLLATE utf8mb4_bin;
 ```
 
 3) Exit MySQL:
