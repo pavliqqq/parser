@@ -43,10 +43,12 @@ class Job
             exit(0);
         });
 
-        $limitSeconds = 10;
+        $limitSeconds = 5;
         $countSeconds = 0;
 
         while (true) {
+            pcntl_signal_dispatch();
+
             $link = $this->linkService->getLink($this->links);
             $this->currentLink = $link;
             if (!$link) {
@@ -58,14 +60,11 @@ class Job
                     $countSeconds++;
 
                     if ($countSeconds >= $limitSeconds) {
-                        $this->logger->info("Reached limit {$limitSeconds}s. Parser stopping...");
-
-                        $parentPid = posix_getppid();
-                        posix_kill($parentPid, SIGINT);
-
+                        $this->logger->info(
+                            "Reached limit {$limitSeconds}s. Stopping child " . getmypid() . "..."
+                        );
                         exit(0);
                     }
-
                     continue;
                 }
             }
@@ -81,9 +80,8 @@ class Job
                 $model->run($link['url']);
                 $this->currentLink = null;
             } catch (Exception $e) {
-                $this->logger->error('Error with processing url:' . $link['url'], [
+                $this->logger->error('Error with processing url: ' . $link['url'], [
                     'message' => $e->getMessage(),
-                    'trace' => $e->getTraceAsString()
                 ]);
             }
         }
