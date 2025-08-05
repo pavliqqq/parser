@@ -20,6 +20,7 @@ class ForkManager
     private int $threads;
     private int $parentPid;
     private array $pids = [];
+    private bool $isStopped = false;
 
     public function __construct()
     {
@@ -55,17 +56,7 @@ class ForkManager
             }
         }
 
-        while (true) {
-            $pid = pcntl_wait($status, WNOHANG);
-
-            if ($pid > 0) {
-                echo "Child $pid exited\n";
-            } elseif ($pid === 0) {
-                usleep(50000);
-            } elseif ($pid === -1) {
-                break;
-            }
-        }
+        $this->waitChildren();
     }
 
     private function runStartPage(): void
@@ -104,6 +95,12 @@ class ForkManager
 
     public function stop(): void
     {
+        if ($this->isStopped) {
+            return;
+        }
+
+        $this->isStopped = true;
+
         if (getmypid() !== $this->parentPid) {
             return;
         }
@@ -118,9 +115,21 @@ class ForkManager
                 $this->logger->info("Child $pid already exited.");
             }
         }
+    }
 
-        $this->logger->info("All children finished.");
+    private function waitChildren(): void
+    {
+        while (true) {
+            $pid = pcntl_wait($status, WNOHANG);
 
-        exit(0);
+            if ($pid > 0) {
+                $this->logger->info("Child $pid exited");
+            } elseif ($pid === 0) {
+                usleep(50000);
+            } elseif ($pid === -1) {
+                $this->logger->info("All child processes have finished.");
+                break;
+            }
+        }
     }
 }
