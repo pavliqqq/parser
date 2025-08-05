@@ -52,12 +52,11 @@ class LinkService
         }
     }
 
-    public function getLink(string $queue) :?array
+    public function getLink(string $queue): ?array
     {
         try {
-            $rowLink = $this->redis->pop($queue);
+            $rowLink = $this->redis->lPopRPush($queue, $this->processedLinks);
             if ($rowLink) {
-                $this->redis->rPush($this->processedLinks, $rowLink);
                 $this->logger->info('Get link: ' . $rowLink['url']);
                 return $rowLink;
             } else {
@@ -74,11 +73,9 @@ class LinkService
     public function returnLink(array $link): void
     {
         try {
-            $removed = $this->redis->removeElement($this->processedLinks, $link);
+            $removed = $this->redis->lRemLPush($this->processedLinks, $this->links, $link);
 
             if ($removed) {
-                $this->redis->lPush($this->links, $link);
-
                 $this->logger->info("Returned link back to '{$this->links}': {$link['url']}");
             } else {
                 $this->logger->warning("Link not found in '{$this->processedLinks}': {$link['url']}");
@@ -93,10 +90,9 @@ class LinkService
     public function moveLinkToErrorQueue(array $link): void
     {
         try {
-            $removed = $this->redis->removeElement($this->processedLinks, $link);
+            $removed = $this->redis->lRemRPush($this->processedLinks, $this->errorLinks, $link);
 
             if ($removed) {
-                $this->redis->rPush($this->errorLinks, $link);
                 $this->logger->info("Link moved to '{$this->errorLinks}': {$link['url']}");
             } else {
                 $this->logger->warning("Link not found in '{$this->processedLinks}': {$link['url']}");
