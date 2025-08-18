@@ -47,40 +47,41 @@ class Job
         $countSeconds = 0;
 
         while (true) {
-            pcntl_signal_dispatch();
+            $this->getLinkSafe($this->links);
 
-            $link = $this->linkService->getLink($this->links);
-            $this->currentLink = $link;
-            if (!$link) {
-                $link = $this->linkService->getLink($this->errorLinks);
-                $this->currentLink = $link;
-                if (!$link) {
-                    sleep(1);
-                    $this->logger->info("Waiting links...");
-                    $countSeconds++;
+            if (!$this->currentLink) {
+                sleep(1);
+                $this->logger->info("Waiting links...");
+                $countSeconds++;
 
-                    if ($countSeconds >= $limitSeconds) {
+                if ($countSeconds >= $limitSeconds) {
+                    $this->getLinkSafe($this->errorLinks);
+
+                    if (!$this->currentLink) {
                         $this->logger->info(
                             "Reached limit {$limitSeconds}s. Stopping child " . getmypid() . "..."
                         );
-                        exit(0);
+                        break;
                     }
+                } else {
                     continue;
                 }
             }
             $countSeconds = 0;
 
             try {
-                $model = new $link['class'](
+                $model = new $this->currentLink['class'](
                     $this->documentService,
                     $this->linkService,
                     $this->dataService,
                     $this->logger
                 );
-                $model->run($link['url']);
+                $model->run($this->currentLink['url']);
                 $this->currentLink = null;
             } catch (Exception $e) {
-                $this->logger->error('Error with processing url: ' . $link['url'], [
+                $this->logger->error('Error with processing url', [
+                    'pid' => getmypid(),
+                    'url' => $this->currentLink['url'],
                     'message' => $e->getMessage(),
                 ]);
             }
@@ -94,5 +95,12 @@ class Job
         } else {
             $this->logger->info("Child has nothing to return");
         }
+    }
+
+    private function getLinkSafe(string $query): void
+    {
+        pcntl_async_signals(false);
+        $this->currentLink = $link = $this->linkService->getLink($query);
+        pcntl_async_signals(true);
     }
 }
