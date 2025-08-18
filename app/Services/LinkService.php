@@ -32,20 +32,19 @@ class LinkService
 
     public function addLink(string $queue, array $rowLink): void
     {
-        $rowLink['url'] = $this->baseUrl . '/' . $rowLink['url'];
-        $link = $rowLink['url'];
+        $link = $rowLink['url'] = $this->baseUrl . '/' . $rowLink['url'];
 
         try {
             if (!$this->redis->sIsMember('urls', $link)) {
-                $this->redis->sAdd('urls', [$link]);
-                $this->redis->rPush($queue, $rowLink);
-
+                $this->redis->sAddRPush('urls', $queue, $rowLink, $link);
                 $this->logger->info("Insert link: $link");
             } else {
-                $this->logger->info("This link is already in list");
+                $this->logger->info("The link: $link is already in list");
             }
         } catch (Exception $e) {
-            $this->logger->error("Error while inserting link to queue '$queue'", [
+            $this->logger->error("Error while inserting link", [
+                'pid' => getmypid(),
+                'queue' => $queue,
                 'url' => $link,
                 'message' => $e->getMessage()
             ]);
@@ -59,14 +58,15 @@ class LinkService
             if ($rowLink) {
                 $this->logger->info('Get link: ' . $rowLink['url']);
                 return $rowLink;
-            } else {
-                return null;
             }
         } catch (Exception $e) {
             $this->logger->error('Error while getting link', [
+                'queue' => $queue,
+                'pid' => getmypid(),
                 'message' => $e->getMessage()
             ]);
         }
+        $this->logger->error("Could not get link from queue: $queue");
         return null;
     }
 
@@ -82,6 +82,8 @@ class LinkService
             }
         } catch (Exception $e) {
             $this->logger->error('Error while returning link', [
+                'pid' => getmypid(),
+                'url' => $link,
                 'message' => $e->getMessage()
             ]);
         }
@@ -99,6 +101,8 @@ class LinkService
             }
         } catch (Exception $e) {
             $this->logger->error('Error while moving link', [
+                'pid' => getmypid(),
+                'url' => $link,
                 'message' => $e->getMessage()
             ]);
         }
