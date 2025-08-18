@@ -61,13 +61,7 @@ class ForkManager
 
     private function runStartPage(): void
     {
-        $client = new Client();
-        $redis = new Redis();
-        $db = new Database();
-
-        $documentService = new DocumentService($client, $this->logger);
-        $linkService = new LinkService($redis, $this->logger, $client, $this->baseUrl);
-        $dataService = new DataService($db, $this->logger);
+        [$linkService, $dataService, $documentService] = $this->createServices();
 
         $startScrapper = new StartPageScrapper($documentService, $linkService, $dataService, $this->logger);
         $startScrapper->run($this->startUrl);
@@ -81,16 +75,12 @@ class ForkManager
 
         $this->logger->info("Child $index start");
 
-        $client = new Client();
-        $redis = new Redis();
-        $db = new Database();
-
-        $linkService = new LinkService($redis, $this->logger, $client, $this->baseUrl);
-        $dataService = new DataService($db, $this->logger);
-        $documentService = new DocumentService($client, $this->logger);
+        [$linkService, $dataService, $documentService] = $this->createServices();
 
         $job = new Job($this->logger, $linkService, $dataService, $documentService);
         $job->handle();
+
+        exit(0);
     }
 
     public function stop(): void
@@ -110,9 +100,9 @@ class ForkManager
         foreach ($this->pids as $pid) {
             if (posix_kill($pid, 0)) {
                 posix_kill($pid, SIGTERM);
-                $this->logger->warning("Stopping child $pid");
+                $this->logger->warning("Stopping child $pid...");
             } else {
-                $this->logger->info("Child $pid already exited.");
+                $this->logger->info("Child $pid already stopped.");
             }
         }
     }
@@ -123,7 +113,7 @@ class ForkManager
             $pid = pcntl_wait($status, WNOHANG);
 
             if ($pid > 0) {
-                $this->logger->info("Child $pid exited");
+                $this->logger->info("Child $pid stopped gracefully.");
             } elseif ($pid === 0) {
                 usleep(50000);
             } elseif ($pid === -1) {
@@ -131,5 +121,18 @@ class ForkManager
                 break;
             }
         }
+    }
+
+    private function createServices(): array
+    {
+        $client = new Client();
+        $redis = new Redis();
+        $db = new Database();
+
+        $linkService = new LinkService($redis, $this->logger, $client, $this->baseUrl);
+        $dataService = new DataService($db, $this->logger);
+        $documentService = new DocumentService($client, $this->logger);
+
+        return [$linkService, $dataService, $documentService];
     }
 }
