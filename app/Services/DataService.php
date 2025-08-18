@@ -26,7 +26,7 @@ class DataService
         $this->logger = $logger;
     }
 
-    public function insertQuestionsAndAnswers(array $rows): void
+    public function insertQuestionsAndAnswers(array $rows, string $url): void
     {
         $this->dataBase->beginTransaction();
         try {
@@ -48,17 +48,21 @@ class DataService
                     'answer_id' => $answerId,
                 ];
 
-                $this->logger->info("Parsing question: $questionData, answer: $answerData");
                 $insertedCount += $this->linkQuestionToAnswer($data);
             }
             $this->dataBase->commit();
 
-            $this->logger->info(
-                "Insert data: expected rows = " . count($rows) . ", inserted rows = " . $insertedCount
-            );
+            $this->logger->info("Insert data", [
+                'pid' => getmypid(),
+                'url' => $url,
+                'expected' => count($rows),
+                'inserted' => $insertedCount
+            ]);
         } catch (PDOException $e) {
             $this->dataBase->rollback();
             $this->logger->error("Insert data error", [
+                'pid' => getmypid(),
+                'url' => $url,
                 'message' => $e->getMessage()
             ]);
         }
