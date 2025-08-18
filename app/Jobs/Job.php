@@ -100,7 +100,7 @@ class Job
     private function getLinkSafe(string $query): void
     {
         pcntl_async_signals(false);
-        $this->currentLink = $link = $this->linkService->getLink($query);
+        $this->currentLink = $this->linkService->getLink($query);
         pcntl_async_signals(true);
     }
 }
