@@ -83,8 +83,6 @@ class DocumentService
                 if ($status === 200) {
                     $this->logger->info("Load $url, status: " . $status);
                     return $response->getBody()->getContents();
-                } else {
-                    return '';
                 }
             } catch (Exception $e) {
                 $this->logger->error("Attempt $attempt failed for $url", [
@@ -93,6 +91,7 @@ class DocumentService
                 ]);
             }
         }
+        $this->logger->error("Could not connect to link: $url");
         return '';
     }
 
