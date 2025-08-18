@@ -34,7 +34,8 @@ class Database
             $stmt->execute($params);
             return $stmt;
         } catch (PDOException $e) {
-            if (str_contains($e->getMessage(), 'MySQL server has gone away')) {
+            $errorCode = $e->getCode();
+            if ($errorCode === 2006) {
                 $this->reconnect();
                 return $this->query($sql, $params);
             }
