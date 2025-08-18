@@ -30,7 +30,9 @@ class PaginationPageScrapper extends AbstractScrapper
 
             $this->logger->info("Parsed $count links from $url");
         } catch (Exception $e) {
-            $this->logger->error("Error with parsing: $url", [
+            $this->logger->error("Error with parsing", [
+                'pid' => getmypid(),
+                'url' => $url,
                 'message' => $e->getMessage()
             ]);
         }

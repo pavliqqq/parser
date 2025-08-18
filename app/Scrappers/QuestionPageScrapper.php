@@ -33,9 +33,11 @@ class QuestionPageScrapper extends AbstractScrapper
                     'answer' => $answer,
                 ];
             }
-            $this->dataService->insertQuestionsAndAnswers($result);
+            $this->dataService->insertQuestionsAndAnswers($result, $url);
         } catch (Exception $e) {
-            $this->logger->error("Error with parsing: $url", [
+            $this->logger->error("Error with parsing", [
+                'pid' => getmypid(),
+                'url' => $url,
                 'message' => $e->getMessage()
             ]);
         }
