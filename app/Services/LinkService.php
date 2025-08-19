@@ -66,7 +66,7 @@ class LinkService
                 'message' => $e->getMessage()
             ]);
         }
-        $this->logger->error("Could not get link from queue: $queue");
+        $this->logger->info("No links found in: $queue");
         return null;
     }
 
